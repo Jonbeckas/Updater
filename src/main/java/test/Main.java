@@ -12,7 +12,6 @@ public class Main {
     private Main() {
         UpdaterSettings settings = new UpdaterSettings("LowLevelSubmarine","Tronic",this::onError,this::onSucces,false);
         Updater updater = new Updater(settings);
-        updater.checkForUpdate();
     }
 
     private void onSucces(String s, URL url) {
