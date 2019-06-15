@@ -17,9 +17,10 @@ public class Updater {
     private UpdaterSettings settings;
     public Updater(UpdaterSettings updaterSettings) {
         this.settings = updaterSettings;
+        checkForUpdate();
     }
 
-    public void checkForUpdate() {
+    private void checkForUpdate() {
         if (this.settings.isGetPreRelease()) {
             try {
                 getPrereleaseString();
