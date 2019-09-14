@@ -49,12 +49,13 @@ public class Updater {
         String text = new Scanner(inStream, "UTF-8").useDelimiter("\\Z").next();
         String ver = "";
         try {
+            System.out.println(text);
             JSONArray json = new JSONArray(text);
             JSONObject release = new JSONObject(json.get(0).toString());
             JSONArray assets = new JSONArray(release.get("assets").toString());
             JSONObject asset = new JSONObject(assets.get(0).toString());
             String[] vers = release.getString("tag_name").split("v");
-            ver = vers[1];
+            ver = vers[0];
             URL link = new URL(asset.getString("browser_download_url"));
             this.settings.getOnSucces().onSucces(ver,link);
         } catch (Exception e) {
