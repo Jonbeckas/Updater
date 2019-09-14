@@ -4,8 +4,10 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.ProtocolException;
 import java.net.URI;
@@ -37,54 +39,98 @@ public class Updater {
     }
 
     private void getPrereleaseString() throws IOException {
-        URL url = new URL("https://api.github.com/repos/" + this.settings.getGithubuser() + "/" + this.settings.getRepository() + "/releases");
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setDoOutput(true);
-        connection.setInstanceFollowRedirects(false);
-        connection.setRequestMethod("GET");
-        connection.setRequestProperty("Content-Type", "application/json");
-        connection.setRequestProperty("charset", "utf-8");
-        connection.connect();
-        InputStream inStream = connection.getInputStream();
-        String text = new Scanner(inStream, "UTF-8").useDelimiter("\\Z").next();
-        String ver = "";
+        HttpURLConnection connection = null;
         try {
-            System.out.println(text);
-            JSONArray json = new JSONArray(text);
-            JSONObject release = new JSONObject(json.get(0).toString());
-            JSONArray assets = new JSONArray(release.get("assets").toString());
-            JSONObject asset = new JSONObject(assets.get(0).toString());
-            String[] vers = release.getString("tag_name").split("v");
-            ver = vers[0];
-            URL link = new URL(asset.getString("browser_download_url"));
-            this.settings.getOnSucces().onSucces(ver,link);
-        } catch (Exception e) {
-            this.settings.getOnError().onError(ver,e);
+            URL url = new URL("https://api.github.com/repos/" + this.settings.getGithubuser() + "/" + this.settings.getRepository() + "/releases");
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setInstanceFollowRedirects(false);
+            connection.setRequestProperty("User-Agent","PostmanRuntime/7.17.1");
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setRequestProperty("charset", "utf-8");
+            connection.connect();
+            int responseCode = connection.getResponseCode();
+
+            if(responseCode != HttpURLConnection.HTTP_OK){
+                System.out.println("ERROR: "+responseCode);
+                return;
+            }
+            String server_response = readStream(connection.getInputStream());
+            String text = server_response;
+            String ver = "";
+            try {
+                JSONArray json = new JSONArray(text);
+                JSONObject release = new JSONObject(json.get(0).toString());
+                JSONArray assets = new JSONArray(release.get("assets").toString());
+                JSONObject asset = new JSONObject(assets.get(0).toString());
+                String[] vers = release.getString("tag_name").split("v");
+                ver = vers[0];
+                URL link = new URL(asset.getString("browser_download_url"));
+                this.settings.getOnSucces().onSucces(ver,link);
+            } catch (Exception e) {
+                this.settings.getOnError().onError(ver,e);
+            }
+        } finally {
+            connection.disconnect();
         }
+
+    }
+
+    private String readStream(InputStream in) {
+        BufferedReader reader = null;
+        StringBuffer response = new StringBuffer();
+        try {
+            reader = new BufferedReader(new InputStreamReader(in));
+            String line = "";
+            while ((line = reader.readLine()) != null) {
+                response.append(line);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return response.toString();
     }
 
     private void getReleasesString() throws IOException {
-        URL url = new URL("https://api.github.com/repos/" + this.settings.getGithubuser() + "/" + this.settings.getRepository() + "/releases/latest");
-        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-        connection.setDoOutput(true);
-        connection.setInstanceFollowRedirects(false);
-        connection.setRequestMethod("GET");
-        connection.setRequestProperty("Content-Type", "application/json");
-        connection.setRequestProperty("charset", "utf-8");
-        connection.connect();
-        InputStream inStream = connection.getInputStream();
-        String text = new Scanner(inStream, "UTF-8").useDelimiter("\\Z").next();
-        String ver = "";
+        HttpURLConnection connection = null;
         try {
-            JSONObject json = new JSONObject(text);
-            JSONArray assets = new JSONArray(json.get("assets").toString());
-            JSONObject asset = new JSONObject(assets.get(0).toString());
-            ver = json.getString("tag_name") + "";
-            URL link = new URL(asset.getString("browser_download_url"));
-            this.settings.getOnSucces().onSucces(ver,link);
-        } catch (Exception e) {
-            this.settings.getOnError().onError(ver, e);
+            URL url = new URL("https://api.github.com/repos/" + this.settings.getGithubuser() + "/" + this.settings.getRepository() + "/releases/latest");
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setInstanceFollowRedirects(false);
+            connection.setRequestProperty("User-Agent","PostmanRuntime/7.17.1");
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setRequestProperty("charset", "utf-8");
+            connection.connect();
+            int responseCode = connection.getResponseCode();
+
+            if(responseCode != HttpURLConnection.HTTP_OK){
+                System.out.println("ERROR: "+responseCode);
+                return;
+            }
+            String text = readStream(connection.getInputStream());
+            System.out.println(text);
+            String ver = "";
+            try {
+                JSONObject json = new JSONObject(text);
+                JSONArray assets = new JSONArray(json.get("assets").toString());
+                JSONObject asset = new JSONObject(assets.get(0).toString());
+                ver = json.getString("tag_name") + "";
+                URL link = new URL(asset.getString("browser_download_url"));
+                this.settings.getOnSucces().onSucces(ver,link);
+            } catch (Exception e) {
+                this.settings.getOnError().onError(ver, e);
+            }
+        } finally {
+            connection.disconnect();
         }
+
     }
 
 }
